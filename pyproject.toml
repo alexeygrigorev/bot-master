@@ -14,3 +14,8 @@ bot-master = "bot_master.app:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "hatch>=1.16.5",
+]
