@@ -1,0 +1,12 @@
+bots:
+  au-tomator:
+    directory: /home/alexey/bots/au-tomator-telegram-bot
+    command: uv run python main.py
+
+  zapier:
+    directory: /home/alexey/bots/zapier-telegram-bot
+    command: uv run python main.py
+
+  writing-assistant:
+    directory: /home/alexey/git/telegram-writing-assistant
+    command: uv run python main.py

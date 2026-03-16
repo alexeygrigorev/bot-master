@@ -1,0 +1,53 @@
+#main-container {
+    height: 1fr;
+}
+
+#sidebar {
+    width: 32;
+    border-right: solid $primary;
+    padding: 0;
+}
+
+#sidebar-title {
+    text-style: bold;
+    padding: 1 1 0 1;
+    color: $text;
+}
+
+#bot-list {
+    height: 1fr;
+}
+
+BotItem {
+    height: 3;
+    padding: 0 1;
+}
+
+BotItem:hover {
+    background: $boost;
+}
+
+BotItem.--selected {
+    background: $accent;
+}
+
+#log-container {
+    width: 1fr;
+}
+
+#log-title {
+    text-style: bold;
+    padding: 1;
+    dock: top;
+    height: 3;
+}
+
+#log-view {
+    height: 1fr;
+}
+
+#no-connection {
+    width: 1fr;
+    height: 1fr;
+    content-align: center middle;
+}
