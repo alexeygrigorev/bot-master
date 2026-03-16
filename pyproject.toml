@@ -1,7 +1,10 @@
 [project]
 name = "bot-master"
-version = "0.1.0"
+version = "0.1.1"
+description = "Process manager for Telegram bots with auto-restart, persistent logging, and a Textual TUI"
+readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
 dependencies = [
     "textual>=3.0",
     "pyyaml>=6.0",
