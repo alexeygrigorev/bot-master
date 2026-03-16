@@ -1,6 +1,6 @@
 [project]
 name = "bot-master"
-version = "0.1.1"
+version = "0.2.0"
 description = "Process manager for Telegram bots with auto-restart, persistent logging, and a Textual TUI"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -12,7 +12,7 @@ dependencies = [
 
 [project.scripts]
 bot-master-daemon = "bot_master.daemon:main"
-bot-master = "bot_master.app:main"
+bot-master = "bot_master.cli:main"
 
 [build-system]
 requires = ["hatchling"]

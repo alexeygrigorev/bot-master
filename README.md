@@ -7,11 +7,46 @@ A process manager for Telegram bots with a terminal UI. Runs as a background dae
 - **Daemon** (`bot-master-daemon`) — manages bot subprocesses, auto-restarts on crash (exponential backoff), buffers logs in memory and writes to disk. Communicates via Unix socket.
 - **TUI Client** (`bot-master`) — connects to the daemon to view live status, stream logs, and send start/stop/restart commands. If the TUI crashes, bots keep running.
 
-## Setup
+## Quick Start
+
+### Install with uvx
+
+```bash
+uvx bot-master install
+```
+
+This interactive wizard will:
+1. Ask where to store config and logs (default: `~/bots/bot-master`)
+2. Create a `bots.yaml` template
+3. Generate a systemd service file
+
+Then follow the printed next steps to finish setup.
+
+### Connect to the dashboard
+
+```bash
+uvx bot-master
+```
+
+If the daemon isn't running, it will tell you how to start it.
+
+## Installation (alternative methods)
+
+### Install permanently with uv
+
+```bash
+uv tool install bot-master
+```
+
+Then use `bot-master` and `bot-master-daemon` directly (no `uvx` needed).
+
+### From source
 
 ```bash
 cd ~/bots/bot-master
 uv sync
+uv run bot-master-daemon          # start daemon
+uv run bot-master                  # connect TUI
 ```
 
 ## Configuration
@@ -23,31 +58,31 @@ bots:
   my-bot:
     directory: /path/to/bot
     command: uv run python main.py
+
+  another-bot:
+    directory: /path/to/another-bot
+    command: uv run python main.py
 ```
 
-## Usage
+## systemd Service
 
-### Start the daemon manually
+The install wizard generates a service file. To install it manually:
 
 ```bash
-uv run bot-master-daemon
+sudo cp ~/bots/bot-master/bot-master.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now bot-master
 ```
 
-### Install as a systemd service (auto-start on boot, auto-restart on failure)
+This ensures the daemon starts on boot and auto-restarts on failure.
+
+### Manual daemon start (without systemd)
 
 ```bash
-./install.sh
+bot-master-daemon [path/to/bots.yaml]
 ```
 
-This generates the systemd unit from the current directory, enables and starts the service.
-
-### Connect with the TUI
-
-```bash
-uv run bot-master
-```
-
-### TUI Keybindings
+## TUI Keybindings
 
 | Key | Action |
 |-----|--------|
