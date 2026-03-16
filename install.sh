@@ -27,6 +27,8 @@ After=network.target
 Type=simple
 User=${CURRENT_USER}
 WorkingDirectory=${PROJECT_DIR}
+Environment=BOT_MASTER_LOG_DIR=${PROJECT_DIR}/logs
+Environment="PATH=${HOME}/.local/bin:/usr/local/bin:/usr/bin:/bin"
 ExecStart=${VENV_BIN}/bot-master-daemon
 Restart=on-failure
 RestartSec=5

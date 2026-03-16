@@ -36,6 +36,13 @@ def _generate_service(
     else:
         exec_start = f"{Path.home()}/.local/bin/bot-master-daemon {config_path}"
 
+    # Capture current PATH so child processes (bot commands using uv, etc.) work
+    current_path = os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin")
+    home = Path.home()
+    # Ensure ~/.local/bin is in PATH for uv
+    if f"{home}/.local/bin" not in current_path:
+        current_path = f"{home}/.local/bin:{current_path}"
+
     return (
         "[Unit]\n"
         "Description=Bot Master Daemon - Telegram Bot Process Manager\n"
@@ -46,6 +53,7 @@ def _generate_service(
         f"User={user}\n"
         f"WorkingDirectory={work_dir}\n"
         f"Environment=BOT_MASTER_LOG_DIR={work_dir}/logs\n"
+        f'Environment="PATH={current_path}"\n'
         f"ExecStart={exec_start}\n"
         "Restart=on-failure\n"
         "RestartSec=5\n"

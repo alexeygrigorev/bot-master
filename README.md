@@ -64,6 +64,8 @@ bots:
     command: uv run python main.py
 ```
 
+The daemon automatically loads environment variables from `.envrc` and `.env` files in each bot's directory. This means `export TELEGRAM_TOKEN=...` style files work out of the box — no need for direnv or manual sourcing.
+
 ## systemd Service
 
 The install wizard generates a service file. To install it manually:

@@ -60,8 +60,30 @@ class BotProcess:
             self.restart_count = 0
             await self._spawn()
 
+    def _load_env_file(self) -> dict[str, str]:
+        """Load environment variables from .envrc or .env in the bot directory."""
+        env = {}
+        bot_dir = Path(self.config.directory)
+        for env_file in [bot_dir / ".envrc", bot_dir / ".env"]:
+            if env_file.exists():
+                with open(env_file) as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith("#"):
+                            continue
+                        # Strip 'export ' prefix if present
+                        if line.startswith("export "):
+                            line = line[7:]
+                        if "=" in line:
+                            key, _, value = line.partition("=")
+                            key = key.strip()
+                            value = value.strip().strip('"').strip("'")
+                            env[key] = value
+        return env
+
     async def _spawn(self) -> None:
         env = {**os.environ, "PYTHONUNBUFFERED": "1"}
+        env.update(self._load_env_file())
         try:
             self.process = await asyncio.create_subprocess_shell(
                 self.config.command,
