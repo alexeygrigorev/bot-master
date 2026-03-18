@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Dev install: uses the local .venv for the daemon binary.
+# For prod install, use: uvx bot-master install
+
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VENV_BIN="${PROJECT_DIR}/.venv/bin"
 SERVICE_NAME="bot-master"
@@ -13,7 +16,7 @@ if [ ! -f "${VENV_BIN}/bot-master-daemon" ]; then
     (cd "$PROJECT_DIR" && uv sync)
 fi
 
-echo "Installing systemd service..."
+echo "Installing systemd service (dev mode)..."
 echo "  Project dir: ${PROJECT_DIR}"
 echo "  User: ${CURRENT_USER}"
 echo "  Service file: ${SERVICE_FILE}"
@@ -28,8 +31,7 @@ Type=simple
 User=${CURRENT_USER}
 WorkingDirectory=${PROJECT_DIR}
 Environment=BOT_MASTER_LOG_DIR=${PROJECT_DIR}/logs
-Environment="PATH=${HOME}/.local/bin:/usr/local/bin:/usr/bin:/bin"
-ExecStart=${VENV_BIN}/bot-master-daemon
+ExecStart=/bin/bash -lc '${VENV_BIN}/bot-master-daemon'
 Restart=on-failure
 RestartSec=5
 
@@ -42,7 +44,8 @@ sudo systemctl enable "$SERVICE_NAME"
 sudo systemctl restart "$SERVICE_NAME"
 
 echo ""
-echo "Done! Service installed and started."
+echo "Done! Service installed and started (dev mode)."
+echo "  Uses: ${VENV_BIN}/bot-master-daemon"
 echo "  Status:  sudo systemctl status ${SERVICE_NAME}"
 echo "  Logs:    sudo journalctl -u ${SERVICE_NAME} -f"
 echo "  TUI:     cd ${PROJECT_DIR} && uv run bot-master"

@@ -2,14 +2,14 @@
 
 A process manager for Telegram bots with a terminal UI. Runs as a background daemon (survives reboots via systemd) with a Textual TUI client for monitoring.
 
+![Bot Master TUI](images/screenshot.svg)
+
 ## Architecture
 
 - **Daemon** (`bot-master-daemon`) — manages bot subprocesses, auto-restarts on crash (exponential backoff), buffers logs in memory and writes to disk. Communicates via Unix socket.
 - **TUI Client** (`bot-master`) — connects to the daemon to view live status, stream logs, and send start/stop/restart commands. If the TUI crashes, bots keep running.
 
-## Quick Start
-
-### Install with uvx
+## Quick Start (prod)
 
 ```bash
 uvx bot-master install
@@ -20,33 +20,32 @@ This interactive wizard will:
 2. Create a `bots.yaml` template
 3. Generate a systemd service file
 
-Then follow the printed next steps to finish setup.
+Then follow the printed next steps to finish setup (install the tool globally, enable the service).
 
 ### Connect to the dashboard
 
 ```bash
-uvx bot-master
+bot-master          # if installed via uv tool install
+uvx bot-master      # without global install
 ```
 
 If the daemon isn't running, it will tell you how to start it.
 
-## Installation (alternative methods)
+## Dev Setup
 
-### Install permanently with uv
-
-```bash
-uv tool install bot-master
-```
-
-Then use `bot-master` and `bot-master-daemon` directly (no `uvx` needed).
-
-### From source
+For development, use the local source directly:
 
 ```bash
 cd ~/bots/bot-master
 uv sync
-uv run bot-master-daemon          # start daemon
+./install.sh                       # installs systemd service pointing to local .venv
 uv run bot-master                  # connect TUI
+```
+
+Changes to the source take effect after restarting the daemon:
+
+```bash
+sudo systemctl restart bot-master
 ```
 
 ## Configuration
@@ -68,7 +67,7 @@ The daemon automatically loads environment variables from `.envrc` and `.env` fi
 
 ## systemd Service
 
-The install wizard generates a service file. To install it manually:
+The install wizard (`uvx bot-master install`) or dev script (`./install.sh`) generates a service file. To install it manually:
 
 ```bash
 sudo cp ~/bots/bot-master/bot-master.service /etc/systemd/system/
@@ -93,7 +92,8 @@ bot-master-daemon [path/to/bots.yaml]
 | `r` | Restart selected bot |
 | `a` | Start all bots |
 | `z` | Stop all bots |
-| `j`/`k` or arrows | Navigate bot list |
+| arrows / `j`/`k` | Navigate bot list |
+| `tab` | Switch focus between bot list and logs |
 | `q` | Quit TUI (daemon keeps running) |
 
 ## Logs
@@ -108,6 +108,22 @@ logs/
 ```
 
 The daemon also keeps the last 5000 lines per bot in memory for fast streaming to the TUI.
+
+## Uninstall
+
+```bash
+# Stop and remove the systemd service
+sudo systemctl stop bot-master
+sudo systemctl disable bot-master
+sudo rm /etc/systemd/system/bot-master.service
+sudo systemctl daemon-reload
+
+# Remove the global tool (if installed)
+uv tool uninstall bot-master
+
+# Remove config and logs (optional)
+rm -rf ~/bots/bot-master
+```
 
 ## Environment Variables
 

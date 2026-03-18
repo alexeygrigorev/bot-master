@@ -4,8 +4,12 @@
 
 #sidebar {
     width: 32;
-    border-right: solid $primary;
+    border-right: solid $primary-darken-2;
     padding: 0;
+}
+
+#sidebar.--active {
+    border-right: solid $accent;
 }
 
 #sidebar-title {
@@ -33,6 +37,11 @@ BotItem.--selected {
 
 #log-container {
     width: 1fr;
+    border: tall $primary-darken-2;
+}
+
+#log-container.--active {
+    border: tall $accent;
 }
 
 #log-title {
@@ -44,10 +53,4 @@ BotItem.--selected {
 
 #log-view {
     height: 1fr;
-}
-
-#no-connection {
-    width: 1fr;
-    height: 1fr;
-    content-align: center middle;
 }

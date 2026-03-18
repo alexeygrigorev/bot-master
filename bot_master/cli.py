@@ -18,31 +18,9 @@ def _daemon_is_running() -> bool:
         return False
 
 
-def _find_daemon_bin() -> str | None:
-    for candidate in [
-        Path.home() / ".local" / "bin" / "bot-master-daemon",
-        Path("/usr/local/bin/bot-master-daemon"),
-    ]:
-        if candidate.exists():
-            return str(candidate)
-    return None
-
-
 def _generate_service(
-    work_dir: Path, config_path: Path, daemon_bin: str | None, user: str
+    work_dir: Path, config_path: Path, daemon_cmd: str, user: str
 ) -> str:
-    if daemon_bin:
-        exec_start = f"{daemon_bin} {config_path}"
-    else:
-        exec_start = f"{Path.home()}/.local/bin/bot-master-daemon {config_path}"
-
-    # Capture current PATH so child processes (bot commands using uv, etc.) work
-    current_path = os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin")
-    home = Path.home()
-    # Ensure ~/.local/bin is in PATH for uv
-    if f"{home}/.local/bin" not in current_path:
-        current_path = f"{home}/.local/bin:{current_path}"
-
     return (
         "[Unit]\n"
         "Description=Bot Master Daemon - Telegram Bot Process Manager\n"
@@ -53,8 +31,7 @@ def _generate_service(
         f"User={user}\n"
         f"WorkingDirectory={work_dir}\n"
         f"Environment=BOT_MASTER_LOG_DIR={work_dir}/logs\n"
-        f'Environment="PATH={current_path}"\n'
-        f"ExecStart={exec_start}\n"
+        f"ExecStart=/bin/bash -lc '{daemon_cmd}'\n"
         "Restart=on-failure\n"
         "RestartSec=5\n"
         "\n"
@@ -64,10 +41,11 @@ def _generate_service(
 
 
 def run_install() -> None:
+    """Prod install: uses `uv tool install bot-master` for the daemon binary."""
     home = Path.home()
     default_dir = home / "bots" / "bot-master"
 
-    print("Bot Master - Install Wizard")
+    print("Bot Master - Install Wizard (prod)")
     print("=" * 40)
     print()
 
@@ -96,14 +74,17 @@ def run_install() -> None:
 
     print(f"  Logs directory: {work_dir / 'logs'}")
 
-    daemon_bin = _find_daemon_bin()
+    # Check if bot-master-daemon is already installed as a tool
+    daemon_bin = home / ".local" / "bin" / "bot-master-daemon"
+    needs_tool_install = not daemon_bin.exists()
 
     # Ask about systemd
     print()
     install_systemd = input("Install systemd service? [Y/n]: ").strip().lower()
     if install_systemd in ("", "y", "yes"):
         user = os.environ.get("USER", "nobody")
-        service_content = _generate_service(work_dir, config_path, daemon_bin, user)
+        daemon_cmd = f"{daemon_bin} {config_path}"
+        service_content = _generate_service(work_dir, config_path, daemon_cmd, user)
         service_path = work_dir / "bot-master.service"
         service_path.write_text(service_content)
         print(f"\n  Generated: {service_path}")
@@ -115,13 +96,14 @@ def run_install() -> None:
     print()
 
     step = 1
+
     print(f"  {step}. Edit your bot config:")
     print(f"     {config_path}")
     print()
     step += 1
 
-    if not daemon_bin:
-        print(f"  {step}. Install bot-master permanently:")
+    if needs_tool_install:
+        print(f"  {step}. Install bot-master globally:")
         print(f"     uv tool install bot-master")
         print()
         step += 1

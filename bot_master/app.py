@@ -44,6 +44,8 @@ class DaemonClient:
 
 
 class BotItem(Static):
+    """Not focusable — navigation is handled by the app."""
+
     selected = reactive(False)
 
     def __init__(self, bot_name: str, **kwargs) -> None:
@@ -95,10 +97,11 @@ class BotMasterApp(App):
         Binding("r", "restart_bot", "Restart"),
         Binding("a", "start_all", "Start All"),
         Binding("z", "stop_all", "Stop All"),
-        Binding("j", "next_bot", "Next", show=False),
-        Binding("k", "prev_bot", "Prev", show=False),
-        Binding("down", "next_bot", "Next", show=False),
-        Binding("up", "prev_bot", "Prev", show=False),
+        Binding("tab", "toggle_panel", "Switch Panel", priority=True),
+        Binding("up", "up", "Up", show=False),
+        Binding("down", "down", "Down", show=False),
+        Binding("k", "up", "Up", show=False),
+        Binding("j", "down", "Down", show=False),
         Binding("q", "quit", "Quit"),
     ]
 
@@ -110,6 +113,7 @@ class BotMasterApp(App):
         self.bot_names: list[str] = []
         self._log_task: asyncio.Task | None = None
         self._connected = False
+        self._panel = "bots"  # "bots" or "logs"
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -149,6 +153,7 @@ class BotMasterApp(App):
             if self.bot_names:
                 self.selected_bot = self.bot_names[0]
 
+        self._update_panel_highlight()
         self.set_interval(2, self._poll_status)
 
     async def _poll_status(self) -> None:
@@ -170,6 +175,8 @@ class BotMasterApp(App):
                 pass
 
     def on_bot_item_selected(self, event: BotItem.Selected) -> None:
+        self._panel = "bots"
+        self._update_panel_highlight()
         self.selected_bot = event.bot_name
 
     async def watch_selected_bot(self, bot_name: str) -> None:
@@ -197,8 +204,6 @@ class BotMasterApp(App):
         log_view = self.query_one("#log-view", RichLog)
         log_view.clear()
 
-        # We need a fresh connection for log streaming since the protocol
-        # uses subscribe_logs which holds the connection
         resp = await self.client.send({"action": "logs", "bot": bot_name, "lines": 500})
         if resp and resp.get("ok"):
             for line in resp["lines"]:
@@ -226,6 +231,53 @@ class BotMasterApp(App):
         except (asyncio.CancelledError, ConnectionError, OSError):
             pass
 
+    def _update_panel_highlight(self) -> None:
+        """Update visual indicators for which panel is active."""
+        sidebar = self.query_one("#sidebar")
+        log_container = self.query_one("#log-container")
+        log_view = self.query_one("#log-view", RichLog)
+
+        if self._panel == "logs":
+            sidebar.remove_class("--active")
+            log_container.add_class("--active")
+            log_view.focus()
+        else:
+            sidebar.add_class("--active")
+            log_container.remove_class("--active")
+            # Remove focus from log view so arrow keys don't scroll it
+            self.set_focus(None)
+
+    def action_toggle_panel(self) -> None:
+        if self._panel == "bots":
+            self._panel = "logs"
+        else:
+            self._panel = "bots"
+        self._update_panel_highlight()
+
+    def action_up(self) -> None:
+        if self._panel == "bots":
+            self._move_bot(-1)
+        else:
+            log_view = self.query_one("#log-view", RichLog)
+            log_view.scroll_up(animate=False)
+
+    def action_down(self) -> None:
+        if self._panel == "bots":
+            self._move_bot(1)
+        else:
+            log_view = self.query_one("#log-view", RichLog)
+            log_view.scroll_down(animate=False)
+
+    def _move_bot(self, delta: int) -> None:
+        if not self.bot_names:
+            return
+        try:
+            idx = self.bot_names.index(self.selected_bot)
+            idx = (idx + delta) % len(self.bot_names)
+        except ValueError:
+            idx = 0
+        self.selected_bot = self.bot_names[idx]
+
     async def action_start_bot(self) -> None:
         if self.selected_bot and self._connected:
             await self.client.send({"action": "start", "bot": self.selected_bot})
@@ -247,26 +299,6 @@ class BotMasterApp(App):
         if self._connected:
             for name in self.bot_names:
                 await self.client.send({"action": "stop", "bot": name})
-
-    def action_next_bot(self) -> None:
-        if not self.bot_names:
-            return
-        try:
-            idx = self.bot_names.index(self.selected_bot)
-            idx = (idx + 1) % len(self.bot_names)
-        except ValueError:
-            idx = 0
-        self.selected_bot = self.bot_names[idx]
-
-    def action_prev_bot(self) -> None:
-        if not self.bot_names:
-            return
-        try:
-            idx = self.bot_names.index(self.selected_bot)
-            idx = (idx - 1) % len(self.bot_names)
-        except ValueError:
-            idx = 0
-        self.selected_bot = self.bot_names[idx]
 
     async def action_quit(self) -> None:
         if self._log_task:
